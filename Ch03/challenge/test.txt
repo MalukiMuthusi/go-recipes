@@ -1,0 +1,3 @@
+: 1542898478:0;go help mod
+: 1542898478:0;go help mod
+: 1542898485:0;go install app
