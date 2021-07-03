@@ -12,9 +12,13 @@ Implement an `ImageCanvas` struct which hold a slice of drawable items and has
 package main
 
 import (
+	"fmt"
+	"image"
 	"image/color"
+	"image/png"
 	"io"
 	"log"
+	"math"
 	"os"
 )
 
@@ -24,22 +28,53 @@ var (
 	Blue  = color.RGBA{0, 0, 0xFF, 0xFF}
 )
 
+type Shape struct {
+	X     int
+	Y     int
+	Color color.Color
+}
+
 type Circle struct {
-	// FIXME
+	Shape
+	Radius int
 }
 
 func NewCircle(x, y, r int, c color.Color) *Circle {
-	// FIXME
-	return nil
+
+	return &Circle{Shape: Shape{X: x, Y: y, Color: c}, Radius: r}
+}
+
+func (c *Circle) Draw(d Device) {
+	minX, minY := c.X-c.Radius, c.Y-c.Radius
+	maxX, maxY := c.X+c.Radius, c.Y+c.Radius
+	for x := minX; x <= maxX; x++ {
+		for y := minY; y <= maxY; y++ {
+			dx, dy := x-c.X, y-c.Y
+			if int(math.Sqrt(float64(dx*dx+dy*dy))) <= c.Radius {
+				d.Set(x, y, c.Color)
+			}
+		}
+	}
 }
 
 type Rectangle struct {
-	// FIXME
+	Shape
+	Width  int
+	Height int
 }
 
 func NewRectangle(x, y, h, w int, c color.Color) *Rectangle {
-	// FIXME
-	return nil
+	return &Rectangle{Shape: Shape{X: x, Y: y, Color: c}, Height: h, Width: w}
+}
+
+func (r *Rectangle) Draw(d Device) {
+	minX, minY := r.X-r.Width/2, r.Y-r.Height/2
+	maxX, maxY := r.X+r.Width/2, r.Y+r.Height/2
+	for x := minX; x <= maxX; x++ {
+		for y := minY; y <= maxY; y++ {
+			d.Set(x, y, r.Color)
+		}
+	}
 }
 
 type Device interface {
@@ -47,25 +82,38 @@ type Device interface {
 }
 
 type ImageCanvas struct {
-	// FIXME
+	Drawables []Drawer
+	Width     int
+	Height    int
 }
 
 func NewImageCanvas(width, height int) (*ImageCanvas, error) {
-	// FIXME
-	return nil, nil
+	if width <= 0 || height <= 0 {
+		return nil, fmt.Errorf("negative size: width=%d, height=%d", width, height)
+	}
+
+	c := ImageCanvas{
+		Width:  width,
+		Height: height,
+	}
+	return &c, nil
 }
 
 type Drawer interface {
-	// FIXME
+	Draw(d Device)
 }
 
 func (ic *ImageCanvas) Add(d Drawer) {
-	// FIXME
+	ic.Drawables = append(ic.Drawables, d)
 }
 
 func (ic *ImageCanvas) Draw(w io.Writer) error {
-	// FIXME
-	return nil
+	img := image.NewRGBA(image.Rect(0, 0, ic.Width, ic.Height))
+
+	for _, drawable := range ic.Drawables {
+		drawable.Draw(img)
+	}
+	return png.Encode(w, img)
 }
 
 func main() {
